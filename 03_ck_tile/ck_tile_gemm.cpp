@@ -138,9 +138,6 @@ int main() {
         return 1;
     }
 
-    // The kernel allocates its LDS statically on-device, so the dynamic LDS
-    // byte size passed here is 0. Passing time_kernel_=true makes launch_kernel
-    // run warmup + repeat launches and return the average milliseconds.
     float avg_ms = launch_kernel(stream_config{nullptr, true},
                                  make_kernel(Kernel{}, grid_dim, block_dim, 0, kargs));
     HIP_CHECK_ERROR(hipGetLastError());
