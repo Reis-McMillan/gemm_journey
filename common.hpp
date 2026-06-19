@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <string>
 #include <vector>
 #include <cmath>
 #include <hip/hip_runtime.h>
@@ -46,4 +47,36 @@ inline void init_matrix(std::vector<float>& mat, int size, int mod_factor) {
     for (int i = 0; i < size; ++i) {
         mat[i] = static_cast<float>(i % mod_factor) * 0.1f;
     }
+}
+
+// Times a kernel launch (passed as a callable) on the GPU using HIP events.
+// Runs `warmup` untimed launches first, then averages over `iters` timed
+// launches. Returns the average milliseconds per launch.
+template <typename Launch>
+inline float time_kernel_ms(Launch launch, int warmup = 5, int iters = 50) {
+    for (int i = 0; i < warmup; ++i) launch();
+    HIP_CHECK(hipDeviceSynchronize());
+
+    hipEvent_t start, stop;
+    HIP_CHECK(hipEventCreate(&start));
+    HIP_CHECK(hipEventCreate(&stop));
+
+    HIP_CHECK(hipEventRecord(start));
+    for (int i = 0; i < iters; ++i) launch();
+    HIP_CHECK(hipEventRecord(stop));
+    HIP_CHECK(hipEventSynchronize(stop));
+
+    float total_ms = 0.0f;
+    HIP_CHECK(hipEventElapsedTime(&total_ms, start, stop));
+    HIP_CHECK(hipEventDestroy(start));
+    HIP_CHECK(hipEventDestroy(stop));
+
+    return total_ms / iters;
+}
+
+// Prints average runtime and the corresponding throughput for an MxNxK GEMM.
+// A GEMM performs 2*M*N*K floating point operations (one multiply + one add).
+inline void print_perf(const std::string& name, float avg_ms, int M, int N, int K) {
+    double gflops = (2.0 * M * N * K) / (avg_ms / 1000.0) / 1e9;
+    std::cout << name << " | " << avg_ms << " ms/iter | " << gflops << " GFLOP/s" << std::endl;
 }

@@ -1,0 +1,5 @@
+/home/onnode/gemm_journey/build/CMakeFiles/01_naive_gemm.dir
+/home/onnode/gemm_journey/build/CMakeFiles/02_tiled_gemm.dir
+/home/onnode/gemm_journey/build/CMakeFiles/03_ck_tile_gemm.dir
+/home/onnode/gemm_journey/build/CMakeFiles/edit_cache.dir
+/home/onnode/gemm_journey/build/CMakeFiles/rebuild_cache.dir

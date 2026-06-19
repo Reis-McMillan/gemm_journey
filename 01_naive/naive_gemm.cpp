@@ -9,7 +9,7 @@ __global__ void naive_gemm_kernel(const float* A, const float* B, float* C, int 
     // get the current column index of B that this thread corresponds to
     int col = blockIdx.x * blockDim.x + threadIdx.x;
     // get the current row index of A that his thread corresponds to
-    int row = blockIdx.y * blockDim.y + threadIdx.y
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (row < m && col < n) {
         float sum = 0.0f;
@@ -73,11 +73,15 @@ int main() {
     // additional shared memory to allocate
     // hipStream: 0 -> NULL stream
     // kernel args A, B, C, m, n, and k
-    hipLaunchKernelGGL(naive_gemm_kernel, numBlocks, threadsPerBlock, 0, 0, d_A, d_B, d_C, M, N, K);
+    auto launch = [&]() {
+        hipLaunchKernelGGL(naive_gemm_kernel, numBlocks, threadsPerBlock, 0, 0, d_A, d_B, d_C, M, N, K);
+    };
 
-    // check for errors and wait for kernel to finish
+    // time the kernel (warmup + averaged timed runs), then report throughput
+    float avg_ms = time_kernel_ms(launch);
     HIP_CHECK(hipGetLastError());
     HIP_CHECK(hipDeviceSynchronize());
+    print_perf("Naive GEMM", avg_ms, M, N, K);
 
     // copy data from GPU back to host
     HIP_CHECK(hipMemcpy(h_C.data(), d_C, size_C, hipMemcpyDeviceToHost));

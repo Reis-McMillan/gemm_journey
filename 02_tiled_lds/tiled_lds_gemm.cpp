@@ -94,9 +94,15 @@ int main() {
     dim3 numBlocks((N + TILE_SIZE - 1) / TILE_SIZE, 
                    (M + TILE_SIZE - 1) / TILE_SIZE);
 
-    hipLaunchKernelGGL(tiled_gemm_kernel, numBlocks, threadsPerBlock, 0, 0, d_A, d_B, d_C, M, N, K);
+    auto launch = [&]() {
+        hipLaunchKernelGGL(tiled_gemm_kernel, numBlocks, threadsPerBlock, 0, 0, d_A, d_B, d_C, M, N, K);
+    };
+
+    // time the kernel (warmup + averaged timed runs), then report throughput
+    float avg_ms = time_kernel_ms(launch);
     HIP_CHECK(hipGetLastError());
     HIP_CHECK(hipDeviceSynchronize());
+    print_perf("Tiled LDS GEMM", avg_ms, M, N, K);
 
     HIP_CHECK(hipMemcpy(h_C.data(), d_C, size_C, hipMemcpyDeviceToHost));
 

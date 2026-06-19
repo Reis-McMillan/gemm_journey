@@ -10,6 +10,14 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall")
 
+# GPU target architecture.
+# This is a gfx1102 (RDNA3) card, but it is run with
+# HSA_OVERRIDE_GFX_VERSION=11.0.0 (ROCm has no official gfx1102 support), so the
+# HIP runtime loads gfx1100 code objects. We must compile for gfx1100 to match,
+# otherwise the loader reports "No compatible code objects found for gfx1100".
+set(GPU_TARGET "gfx1100" CACHE STRING "AMD GPU architecture to compile device code for")
+add_compile_options(--offload-arch=${GPU_TARGET})
+
 # 3. LOCATE THE COMPOSABLE KERNEL HEADERS
 # We define a cache variable pointing to where you cloned the repo.
 # You can override this from the command line if your path is different!
@@ -35,9 +43,9 @@ add_executable(01_naive_gemm 01_naive/naive_gemm.cpp)
 target_link_libraries(01_naive_gemm PRIVATE hip::device)
 
 # STAGE 2: Tiled LDS GEMM
-add_executable(02_tiled_gemm 02_tiled_lds/tiled_gemm.cpp)
+add_executable(02_tiled_gemm 02_tiled_lds/tiled_lds_gemm.cpp)
 target_link_libraries(02_tiled_gemm PRIVATE hip::device)
 
 # STAGE 3: CK Tile GEMM
-add_executable(03_ck_tile_gemm 03_ck_tile/my_ck_tile_gemm.cpp)
+add_executable(03_ck_tile_gemm 03_ck_tile/ck_tile_gemm.cpp)
 target_link_libraries(03_ck_tile_gemm PRIVATE hip::device)
